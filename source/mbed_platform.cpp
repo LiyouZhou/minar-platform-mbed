@@ -52,8 +52,10 @@ void sleep(){
     mbed_exit_sleep(&sleep_obj);
 }
 
+#define SCALE_FACTOR 0xfff
+
 tick_t getTime() {
-    return lp_ticker_read();
+    return lp_ticker_read()*SCALE_FACTOR;
 }
 
 uint32_t getTimeOverflows(){
@@ -69,7 +71,14 @@ void sleepFromUntil(tick_t now, tick_t until){
     } else {
         const uint32_t next_int = lp_ticker_get_compare_match();
 
-        if(timeIsInPeriod(now, until, next_int)){
+        if (now >= until) {
+            until = until/SCALE_FACTOR + UINT32_MAX/SCALE_FACTOR;
+        } else {
+            until = until/SCALE_FACTOR;
+        }
+        now = now/SCALE_FACTOR;
+
+        if(timeIsInPeriod(now, until, next_int)) {
             lp_ticker_sleep_until(now, until);
         } else {
             // existing compare match is sooner, go to sleep
